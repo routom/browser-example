@@ -35,19 +35,18 @@
   (atom
     {:home {:ui Home :bidi/path "/"}
      :login {:module-id "auth" :bidi/path ["/login" rest-expr]}
-     :repos {:module-id "repos" :bidi/path ["/users/" :user/login "/repos"]}
+     :repos {:module-id "repos" :bidi/path ["/users" rest-expr]}
      :shell {:ui Shell
              :sub-routes
-                 {
-                  :users/home {:module-id "users" :bidi/path ["users/" rest-expr]}}}}))
+                 {:users/home {:module-id "users" :bidi/path ["users/" rest-expr]}}}}))
 
 (defn send
   [{:keys [remote] :as remotes} callback]
   (let [ast (om/query->ast remote)]
     (doseq [child-ast (:children ast)]
       (let [dispatch-key (:dispatch-key child-ast)]
-        (sends/send dispatch-key child-ast #(callback % remote))))
-    ))
+        (sends/send dispatch-key child-ast #(callback % remote))))))
+
 
 (defn merge-novelty!
   [reconciler db res query]
@@ -66,7 +65,7 @@
 
 (defn init
   []
-  (let [{:keys [root-class set-route! get-route]} (r/init-router routes #(dom/div nil (str "loading module " %2 " status: " %1 )))
+  (let [{:keys [root-class set-route! get-route ui->props]} (r/init-router routes #(dom/div nil (str "loading module " %2 " status: " %1)))
         useQueries js/window.History.useQueries
         createHistory (useQueries js/window.History.createHashHistory)
         history (createHistory)
@@ -77,6 +76,7 @@
                       {:route/id :home :route/params {:rest "/"}})
         reconciler (om/reconciler
                      {:parser p/parser
+                      :ui->props ui->props
                       :state  s/conn
                       :normalize false
                       :send send

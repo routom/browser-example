@@ -1,11 +1,11 @@
 (defproject org.routom/browser-example "0.1.0-SNAPSHOT"
   :description ""
   :dependencies [[org.clojure/clojure "1.7.0"]
-                 [org.clojure/clojurescript "1.8.40"]
+                 [org.clojure/clojurescript "1.8.51"]
                  [org.clojure/core.async "0.2.374"]
                  [datascript "0.15.0"]
-                 [org.omcljs/om "1.0.0-alpha32"]
-                 [org.routom/routom "0.1.0-alpha5"]
+                 [org.omcljs/om "1.0.0-alpha34"]
+                 [org.routom/routom "0.1.0-alpha6" :exclusions [org.omcljs/om]]
                  [figwheel-sidecar "0.5.0-SNAPSHOT" :scope "test"]]
 
   :plugins [[lein-figwheel "0.5.2"]

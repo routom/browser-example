@@ -22,18 +22,21 @@
   [db key value query]
   (first (pull-by-attr-value db key value query)))
 
+(defn remote-with-token
+  [{:keys [ast parser] :as env} params]
+  (let [{:keys [login]} (parser env [{:login [:login/token]}])]
+    (when-let [token (:login/token login)]
+      {:value :loading
+       :remote (update ast :params merge {:login/token token} params)})))
 
 (defn read-remote-with-token
-  [{ast :ast query :query conn :state :as env} [key val :as ident] params]
+  [{query :query conn :state :as env} [key val :as ident] params]
   (let [entities (pull-by-attr-value @conn key val query)
         value (first entities)]
     ; TODO throw an exception if entities has more than one item
     (if value
       {:value value}
-      (let [{:keys [login]} (parser env [{:login [:login/token]}])]
-        (when-let [token (:login/token login)]
-          {:value :loading
-           :remote (update ast :params merge {:login/token token} params)})))))
+      (remote-with-token env params))))
 
 (defn read-targeted-remote-with-token
   [{{:keys [target] :as ast} :ast query :query parser :parser conn :state :as env} [key val :as ident] params]
@@ -41,7 +44,8 @@
     (let [login (parser env [{:login [:login/token]}])]
       (if-let [token (get-in login [:login :login/token])]
         {:value :loading
-         target (update ast :params merge {:login/token token} params)}
+         target (-> (update ast :params merge {:login/token token} params)
+                    (assoc :token token))}
         )
       )
     (let [value (pull-by-attr-value @conn key val query)]

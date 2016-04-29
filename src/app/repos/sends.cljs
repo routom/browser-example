@@ -1,34 +1,113 @@
 (ns app.repos.sends
   (:require-macros [cljs.core.async.macros :refer [go]])
-  (:require [app.sends :refer [send create-sender]]
+  (:require [app.sends :refer [github send create-sender assign-namespace]]
             [fetch.core :as f]
             [github.core :as gh]
             [cljs.core.async :as async]
-            [github.repos :as r]))
+            [github.users :as ghu]
+            [github.repos :as ghr]
+            [datascript.core :as d]))
 
 (defn json->repo
-  [{:keys [id owner name url]} login]
-  (let [owner-login (:login owner)]
+  [{:keys [id owner description name url default_branch] :as repo}]
+  (let [owner-login (:login owner)
+        default-branch-id [owner-login name default_branch]]
     [{:user/login owner-login}
-     {:repo/id    id
-      :repo/name  name
-      :repo/owner (condp = (:type owner)
-                    "User" [:user/login owner-login]
-                    "Organization" [:org/login owner-login])
-      :repo/url   url}]))
+     (-> (assign-namespace repo "repo")
+         (merge
+           {:repo/owner (condp = (:type owner)
+                          "User" [:user/login owner-login]
+                          "Organization" [:org/login owner-login])
+            :repo/default-branch default_branch}))]))
 
 (defmethod send :repos/list
   [key {:keys [params]} callback]
   (if-let [{:keys [login/token user/login repos.list/page repos.list/per-page]} params]
     (let [ident [key login]
-          request (r/user-repos-request login page per-page)
-          sender (create-sender key ident request token callback)]
-      (sender (fn [{:keys [json get-header status ok]}]
-                (when ok
-                  (let [link-header (get-header "Link")
-                        link-map (if link-header
-                                   (gh/parse-links link-header)
-                                   {})]
-                    (into [{:repos/list      login
-                            :repos.list/links link-map}] (mapcat #(json->repo % login) json)))))))))
+          user (ghu/->User github login)
+          request (ghu/get-repositories user page per-page)
+          sender (create-sender key ident token callback)]
+      (sender request (fn [{:keys [json get-header status ok]}]
+                       (when ok
+                         (let [link-header (get-header "Link")
+                               link-map (if link-header
+                                          (gh/parse-links link-header)
+                                          {})]
+                           (into [{:repos/list      login
+                                   :repos.list/links link-map}] (mapcat #(json->repo %) json)))))))))
+
+(defn json->branch [id login repo-name {:keys [name commit]}]
+  {:repo/_branches [:repo/id id]
+   :branch/name name
+   :branch/id [login repo-name name]
+   :branch/commit (:sha commit)})
+
+(defmethod send :repo/detail
+  [key {:keys [params]} callback]
+  (if-let [{:keys [login/token user/login repo/name]} params]
+    (let [ident [key [login name]]
+          user (ghu/->User github login)
+          repo-apis (ghr/->Repo github user name)
+          request (ghr/get-repo repo-apis)
+          sender (create-sender key ident token callback)]
+      (sender request (fn [{:keys [json get-header status ok]}]
+                       (when ok
+                         (let [repo (json->repo json)
+                               id (:id json)]
+                           (sender (ghr/get-branches repo-apis)
+                                   (fn [{:keys [json ok]}]
+                                     (when ok
+                                       (mapv #(json->branch id login name %) json))))
+                           repo)))))))
+
+
+
+(defn json->tree-item
+  [json]
+  (merge
+    (assign-namespace json "tree-item")
+    {:db/id (d/tempid nil)}))
+
+(defn json->tree
+  [id json]
+  (let [tree (assign-namespace json "tree")
+        tempid (d/tempid nil)]
+    [{:branch/id id}
+     (merge tree
+            {:db/id        tempid
+             :branch/_tree [:branch/id id]
+             :tree/tree    (map json->tree-item (:tree json))})]))
+
+(defmethod send :tree/by-name
+  [key {params :params} callback]
+  (let [{:keys [login/token user/login repo/name branch]} params
+        id [login name branch]
+        ident [key id]
+        user (ghu/->User github login)
+        repo-apis (ghr/->Repo github user name)
+        request (ghr/get-tree repo-apis branch)
+        sender (create-sender key ident token callback)]
+    (sender request
+            (fn [{:keys [json ok]}]
+              (when ok
+                (json->tree id json))))))
+
+(defn json->blob
+  [json]
+  (-> (assign-namespace json "tree-item")
+      (update :tree-item/content js/atob)))
+
+(defmethod send :remote.blob
+  [key {params :params} callback]
+  (let [{:keys [login/token user/login repo/name path branch]} params
+        remote-id [login name branch path]
+        ident [key remote-id]
+        user (ghu/->User github login)
+        repo-apis (ghr/->Repo github user name)
+        request (ghr/get-contents repo-apis branch path)
+        sender (create-sender key ident token callback)]
+    (sender request
+            (fn [{:keys [json ok]}]
+              (when ok
+                (json->blob (dissoc json :_links)))))))
 
