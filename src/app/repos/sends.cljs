@@ -95,7 +95,7 @@
 (defn json->blob
   [json]
   (-> (assign-namespace json "tree-item")
-      (update :tree-item/content js/atob)))
+      (update :tree-item/content js/Base64.fromBase64)))
 
 (defmethod send :remote.blob
   [key {params :params} callback]
@@ -110,4 +110,3 @@
             (fn [{:keys [json ok]}]
               (when ok
                 (json->blob (dissoc json :_links)))))))
-
