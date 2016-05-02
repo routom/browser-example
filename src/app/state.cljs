@@ -3,7 +3,9 @@
             [app.auth.schema :as auth]
             [app.repos.schema :as repos]))
 
-(def schema (merge-with merge
+(def schema (merge-with
+              merge
+              {:remote/by-id {:db/unique :db.unique/identity}}
               auth/schema
               repos/schema))
 

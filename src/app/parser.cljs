@@ -4,7 +4,15 @@
 
 (defmulti read om/dispatch)
 
+(defmethod read :default
+  [_ _ _]
+  {:value {}})
+
 (defmulti mutate om/dispatch)
+
+(defmethod mutate 'remote/force
+  [env key params]
+  {:action #()})
 
 (def parser (om/parser {:read read :mutate mutate}))
 
@@ -22,6 +30,12 @@
   [db key value query]
   (first (pull-by-attr-value db key value query)))
 
+(defn update-ast
+  [{:keys [ast parser] :as env} params]
+  (let [{:keys [login]} (parser env [{:login [:login/token]}])]
+    (when-let [token (:login/token login)]
+      (update ast :params merge {:login/token token} params))))
+
 (defn remote-with-token
   [{:keys [ast parser] :as env} params]
   (let [{:keys [login]} (parser env [{:login [:login/token]}])]
@@ -30,8 +44,8 @@
        :remote (update ast :params merge {:login/token token} params)})))
 
 (defn read-remote-with-token
-  [{query :query conn :state :as env} [key val :as ident] params]
-  (let [entities (pull-by-attr-value @conn key val query)
+  [{query :query conn :state :as env} [key id :as ident] params]
+  (let [entities (pull-by-attr-value @conn key id query)
         value (first entities)]
     ; TODO throw an exception if entities has more than one item
     (if value
@@ -51,3 +65,22 @@
     (let [value (pull-by-attr-value @conn key val query)]
       {:value (first value)})
     ))
+
+(defn remote-read
+  [id {state :state {target :target} :ast :as env} key params on-success]
+  (letfn [(send []
+            (let [remote (update-ast env (assoc params :remote/id id))]
+              {:value  [{:remote/status :loading} nil]
+               :remote remote}))]
+    (if target
+      (send)
+      (let [entities (pull-by-attr-value @state :remote/by-id (into [key] (if (sequential? id) id [id]))  '[*])
+            {:keys [remote/status] :as remote-value} (first entities)]
+
+        ; TODO throw an exception if entities has more than one item
+        (if remote-value
+          (condp = status
+            :success (let [v (on-success)]
+                       {:value [remote-value v]})
+            {:value [remote-value nil]})
+          (send))))))

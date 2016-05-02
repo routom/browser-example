@@ -4,12 +4,13 @@
             [cljs.core.async :as async :refer [chan timeout close! >! <! ]])
   (:import goog.Uri.QueryData))
 
+(def ^:dynamic *timeout* (* 10 1000))
 
 (defn fetch-json
-  ([{:keys [url method] :as opts}]
+  ([{:keys [url method timeout-ms] :as opts}]
    (let [success-chan (chan)
          error-chan (chan)
-         timeout-chan (timeout (* 10 1000))
+         timeout-chan (timeout (or timeout-ms *timeout*))
          opts (dissoc opts :url)
          opts-js (if (= method "POST")
                    (clj->js (update opts :body #(js/JSON.stringify (clj->js %))))

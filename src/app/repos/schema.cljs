@@ -1,14 +1,12 @@
 (ns app.repos.schema)
 
-(def schema {:repos/list {:db/unique :db.unique/identity}
-             :tree/by-name {:db/unique :db.unique/identity}
-             :repo/detail {:db/unique :db.unique/identity}
-             :repo/id {:db/unique :db.unique/identity}
+(def schema {:repo/id {:db/unique :db.unique/identity}
              :repo/branches {:db/valueType :db.type/ref
                              :db/cardinality :db.cardinality/many
                              :db/isComponent true}
              :branch/tree {:db/valueType :db.type/ref
-                           :db/cardinality :db.cardinality/one}
+                           :db/cardinality :db.cardinality/one
+                           :db/isComponent true}
              :tree/sha {:db/unique :db.unique/identity}
              :tree/tree {:db/valueType :db.type/ref
                          :db/cardinality :db.cardinality/many

@@ -9,32 +9,28 @@
   (query [this] '[*])
   static r/IRootQuery
   (root-query [this]
-    '[{(:repo/by-name {:user/login ?user/login :repo/name ?repo/name})
-       [:repo/default-branch
-        :repo/name
-        :repo/description
-        {:repo/branches [:branch/name
-                         :branch/id
-                         {:branch/tree [:tree/sha
-                                        :tree/url
-                                        :tree/readme
-                                        :tree/truncated
-                                        {:tree/tree
-                                         [:tree-item/path
-                                          :tree-item/mode
-                                          :tree-item/type
-                                          :tree-item/sha
-                                          :tree-item/size
-                                          :tree-item/url]}]}]}]}
-      {(:tree/by-name
-         {:user/login      ?user/login
-          :repo/name       ?repo/name
-          :branch ?branch})
-       [:remote/status :remote/error]}
-
-      {(:repo/detail
-         {:user/login ?user/login
-          :repo/name ?repo/name}) [:remote/status :remote/error]}])
+    '[({:repo/by-name
+        [:repo/default-branch
+         :repo/name
+         :repo/description
+         {:repo/branches [:branch/name
+                          :branch/id]}]}
+        {:user/login ?user/login :repo/name ?repo/name})
+      ({:tree/by-name
+        [:tree/sha
+         :tree/url
+         :tree/readme
+         :tree/truncated
+         {:tree/tree
+          [:tree-item/path
+           :tree-item/mode
+           :tree-item/type
+           :tree-item/sha
+           :tree-item/size
+           :tree-item/url]}]}
+        {:user/login ?user/login
+         :repo/name  ?repo/name
+         :branch     ?branch})])
   static om/IQueryParams
   (params [this]
     {:user/login ""
@@ -42,14 +38,15 @@
      :branch nil})
   Object
   (render [this]
-    (let [repo (om/get-computed this :repo/by-name)
-          tree (om/get-computed this :tree/by-name)
+    (let [[repo-remote repo] (om/get-computed this :repo/by-name)
+          [tree-remote tree] (om/get-computed this :tree/by-name)
           branches (get-in repo [:repo/branches])
           {:keys [repo/name repo/description repo/default-branch]} repo
           router (om/shared this :bidi-router)
           history (om/shared this :history)
           {:keys [user/login branch] :as route-params} (om/get-computed this :route/params)
           route-id (om/get-computed this :route/id)]
+      (println repo)
       (if (and branches (not tree) default-branch)
         (let [path (rb/path-for router :route.repo/branch (assoc route-params :branch default-branch))]
           (.replace history path)))
@@ -70,7 +67,8 @@
                                              ; should probably use om/transact! instead
                                              (js/setTimeout (fn [] (.push history path)) 100))}
                             (map #(dom/option
-                                   #js {:value (:branch/name %)}
+                                   #js {:value (:branch/name %)
+                                        :key (:branch/name %)}
                                    (:branch/name %)) branches))
                           (r/try-render-subroute this)))))))
 
@@ -82,29 +80,26 @@
     {:branch nil})
   Object
   (render [this]
-    (let [repo (om/get-computed this :repo/by-name)
-          branches (get-in repo [:repo/branches])
-          router (om/shared this :bidi-router)
+    (let [[tree-remote tree] (om/get-computed this :tree/by-name)
           route-params (om/get-computed this :route/params)
-          selected-branch (first (filter #(= (:branch route-params) (:branch/name %)) branches))]
+          router (om/shared this :bidi-router)]
       (if (r/has-subroute this)
-        (r/render-subroute this {:repo repo :branches branches :selected-branch selected-branch})
+        (r/render-subroute this)
 
-        (if-let [selected-branch selected-branch]
-          (if-let [tree (:branch/tree selected-branch)]
-            (let [by-type (group-by :tree-item/type (sort-by :tree-item/path (:tree/tree tree)))]
-              (dom/table nil
-                         (dom/tbody nil
-                                    (map #(dom/tr
-                                           #js {:key (:tree-item/path %)}
-                                           (dom/td nil (:tree-item/path %))
-                                           (dom/td nil "tree")) (get by-type "tree"))
+        (if tree
+          (let [by-type (group-by :tree-item/type (sort-by :tree-item/path (:tree/tree tree)))]
+            (dom/table nil
+                       (dom/tbody nil
+                                  (map #(dom/tr
+                                         #js {:key (:tree-item/path %)}
+                                         (dom/td nil (:tree-item/path %))
+                                         (dom/td nil "tree")) (get by-type "tree"))
 
-                                    (map #(dom/tr
-                                           #js {:key (:tree-item/path %)}
-                                           (dom/td
-                                             nil
-                                             (dom/a
-                                               #js {:href (rb/href-for router :route.repo/tree-item (assoc route-params :path (:tree-item/path %)))}
-                                               (:tree-item/path %)))
-                                           (dom/td nil "file")) (get by-type "blob")))))))))))
+                                  (map #(dom/tr
+                                         #js {:key (:tree-item/path %)}
+                                         (dom/td
+                                           nil
+                                           (dom/a
+                                             #js {:href (rb/href-for router :route.repo/tree-item (assoc route-params :path (:tree-item/path %)))}
+                                             (:tree-item/path %)))
+                                         (dom/td nil "file")) (get by-type "blob"))))))))))

@@ -9,9 +9,8 @@
             [datascript.core :as d]))
 
 (defn json->repo
-  [{:keys [id owner description name url default_branch] :as repo}]
-  (let [owner-login (:login owner)
-        default-branch-id [owner-login name default_branch]]
+  [{:keys [owner default_branch] :as repo}]
+  (let [owner-login (:login owner)]
     [{:user/login owner-login}
      (-> (assign-namespace repo "repo")
          (merge
@@ -20,7 +19,7 @@
                           "Organization" [:org/login owner-login])
             :repo/default-branch default_branch}))]))
 
-(defmethod send :repos/list
+(defmethod send :repos/by-login
   [key {:keys [params]} callback]
   (if-let [{:keys [login/token user/login repos.list/page repos.list/per-page]} params]
     (let [ident [key login]
@@ -33,7 +32,7 @@
                                link-map (if link-header
                                           (gh/parse-links link-header)
                                           {})]
-                           (into [{:repos/list      login
+                           (into [{:repos/by-login      login
                                    :repos.list/links link-map}] (mapcat #(json->repo %) json)))))))))
 
 (defn json->branch [id login repo-name {:keys [name commit]}]
@@ -42,7 +41,7 @@
    :branch/id [login repo-name name]
    :branch/commit (:sha commit)})
 
-(defmethod send :repo/detail
+(defmethod send :repo/by-name
   [key {:keys [params]} callback]
   (if-let [{:keys [login/token user/login repo/name]} params]
     (let [ident [key [login name]]
@@ -99,9 +98,8 @@
 
 (defmethod send :remote.blob
   [key {params :params} callback]
-  (let [{:keys [login/token user/login repo/name path branch]} params
-        remote-id [login name branch path]
-        ident [key remote-id]
+  (let [{:keys [login/token user/login repo/name path branch remote/id]} params
+        ident [key id]
         user (ghu/->User github login)
         repo-apis (ghr/->Repo github user name)
         request (ghr/get-contents repo-apis branch path)
