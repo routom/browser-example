@@ -6,7 +6,7 @@
 
 (defmulti send (fn [key ast callback] key))
 
-(def github (ghc/->GitHub "https://api.github.com"))
+(def request-response-cache (atom {}))
 
 (defn assign-namespace
   [m ns]
@@ -26,17 +26,34 @@
 
       (callback {key {k              val
                       :remote/status :loading}})
-      (let [[success error timeout :as channels] (f/fetch-json request)]
+      (let [[etag last-modified cached-result] (get @request-response-cache request)
+            request (cond-> request
+                            etag (assoc-in [:headers "If-None-Match"] etag)
+                            last-modified (assoc-in [:headers "If-Modified-Since"] last-modified))
+            [success error timeout :as channels] (f/fetch-json request)]
         (go
           (let [[value ch] (async/alts! channels)]
             (condp = ch
-              success (let [{:keys [json ok status response get-header]} value]
-                        (callback {key (response->txData value)})
-                        (callback {key {k              val
-                                        :remote/status :success
-                                        :http/status status
-                                        :http/ok ok
-                                        :http/json json}}))
+              success (let [{:keys [json ok status response get-header] :as result} value
+                            etag (get-header "ETag")
+                            last-modified (get-header "Last-Modified")]
+                        (if (= status 304)
+                          (let [{:keys [json ok status response get-header]} cached-result]
+                            (callback {key (response->txData cached-result)})
+                            (callback {key {k              val
+                                            :remote/status :success
+                                            :http/status   status
+                                            :http/ok       ok
+                                            :http/json     json}}))
+                          (do
+                            (when (or etag last-modified)
+                              (swap! request-response-cache assoc request [etag last-modified result]))
+                            (callback {key (response->txData value)})
+                            (callback {key {k              val
+                                            :remote/status :success
+                                            :http/status   status
+                                            :http/ok       ok
+                                            :http/json     json}}))))
               error (callback {key {k              val
                                     :remote/status :error
                                     :remote/error  value}})

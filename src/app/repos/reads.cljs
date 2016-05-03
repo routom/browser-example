@@ -50,7 +50,7 @@
                               db branch-id (or query '[*]))]
             (first entities)))))))
 
-(defmethod p/read :remote.blob
+(defmethod p/read :tree-item/by-path
   [{query :query
     conn :state
     :as env} key {:keys [user/login repo/name branch path] :as params}]

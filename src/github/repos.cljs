@@ -1,27 +1,22 @@
 (ns github.repos
-  (:require [github.core :as gh]
-            [github.users :as ghu]))
-
-(defprotocol IRepo
-  (get-repo [this])
-  (get-branches [this])
-  (get-collaborators [this])
-  (get-contents [this branch path])
-  (get-tree [this branch-or-sha]))
+  (:require [github.core :as gh]))
 
 
-(deftype Repo [github user repo-name]
-  IRepo
-  (get-contents [_ branch path]
-    (gh/GET-json-request github (str "/repos/" (ghu/get-username user) "/" repo-name "/contents/" path "?ref=" branch)))
-  (get-repo [_]
-    (gh/GET-json-request github (str "/repos/" (ghu/get-username user) "/" repo-name)))
-  (get-tree [_ branch-or-sha]
-    (gh/GET-json-request github (str "/repos/" (ghu/get-username user) "/" repo-name "/git/trees/" branch-or-sha)))
-  (get-branches [_]
-    (gh/GET-json-request github (str "/repos/" (ghu/get-username user) "/" repo-name "/branches")))
-  (get-collaborators [_]
-    (gh/GET-json-request github (str "/repos/" (ghu/get-username user) "/" repo-name "/collaborators"))))
+(defn get-contents [user repo branch path]
+  (gh/GET-json-request (str "/repos/" user "/" repo "/contents/" path "?ref=" branch)))
+
+(defn get-repo [user repo]
+  (gh/GET-json-request (str "/repos/" user "/" repo)))
+
+(defn get-tree [user repo-name branch-or-sha]
+  (gh/GET-json-request (str "/repos/" user "/" repo-name "/git/trees/" branch-or-sha)))
+
+(defn get-branches [user repo-name]
+  (gh/GET-json-request (str "/repos/" user "/" repo-name "/branches")))
+
+(defn get-collaborators [user repo-name]
+  (gh/GET-json-request (str "/repos/" user "/" repo-name "/collaborators")))
+
 
 
 

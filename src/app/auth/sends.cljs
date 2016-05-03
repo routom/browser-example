@@ -1,7 +1,7 @@
 (ns app.auth.sends
   (:require-macros [cljs.core.async.macros :refer [go]])
-  (:require [app.sends :refer [send github create-sender]]
-            [github.core :as ghc]))
+  (:require [app.sends :refer [send create-sender]]
+            [github.users :as ghu]))
 
 (defn json->user
   [{:keys [login url name location]}]
@@ -16,7 +16,7 @@
 (defmethod send :user/current
   [key ast callback]
   (if-let [token (get-in ast [:params :login/token])]
-    (let [request (ghc/GET-current-user-request github)
+    (let [request (ghu/GET-current-user-request)
           sender (create-sender key [key true] token callback)]
 
       (sender request (fn [{:keys [json ok]}]

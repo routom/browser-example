@@ -6,7 +6,7 @@
 (defui Blob
   static r/IRootQuery
   (root-query [this]
-    '[({:remote.blob [:db/id
+    '[({:tree-item/by-path [:db/id
                       :tree-item/url
                       :tree-item/content
                       :tree-item/encoding
@@ -24,11 +24,11 @@
   Object
   (render [this]
     (dom/div nil (dom/h1 nil (om/get-computed this [:route/params :path]))
-             (let [[remote blob] (om/get-computed this :remote.blob)]
+             (let [[remote blob] (om/get-computed this :tree-item/by-path)]
                (condp = (:remote/status remote)
                  :loading (dom/div nil "loading...")
                  :timeout (dom/div nil "the request timed out")
-                 :error ()
+                 :error (dom/div nil "an error occurred while processing this request")
                  :success (let [{:keys [http/status http/ok]} remote]
                             (if ok
                               (dom/pre nil (:tree-item/content blob))

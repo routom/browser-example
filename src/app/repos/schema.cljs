@@ -7,7 +7,7 @@
              :branch/tree {:db/valueType :db.type/ref
                            :db/cardinality :db.cardinality/one
                            :db/isComponent true}
-             :tree/sha {:db/unique :db.unique/identity}
+             :tree/id {:db/unique :db.unique/identity}
              :tree/tree {:db/valueType :db.type/ref
                          :db/cardinality :db.cardinality/many
                          :db/isComponent true}

@@ -16,21 +16,7 @@
          {:repo/branches [:branch/name
                           :branch/id]}]}
         {:user/login ?user/login :repo/name ?repo/name})
-      ({:tree/by-name
-        [:tree/sha
-         :tree/url
-         :tree/readme
-         :tree/truncated
-         {:tree/tree
-          [:tree-item/path
-           :tree-item/mode
-           :tree-item/type
-           :tree-item/sha
-           :tree-item/size
-           :tree-item/url]}]}
-        {:user/login ?user/login
-         :repo/name  ?repo/name
-         :branch     ?branch})])
+      ])
   static om/IQueryParams
   (params [this]
     {:user/login ""
@@ -73,6 +59,23 @@
                           (r/try-render-subroute this)))))))
 
 (defui Branch
+  static r/IRootQuery
+  (root-query [this]
+    '[({:tree/by-name
+        [:tree/sha
+         :tree/url
+         :tree/readme
+         :tree/truncated
+         {:tree/tree
+          [:tree-item/path
+           :tree-item/mode
+           :tree-item/type
+           :tree-item/sha
+           :tree-item/size
+           :tree-item/url]}]}
+        {:user/login ?user/login
+         :repo/name  ?repo/name
+         :branch     ?branch})])
   static om/IQuery
   (query [this] '[*])
   static om/IQueryParams
@@ -87,7 +90,12 @@
         (r/render-subroute this)
 
         (if tree
-          (let [by-type (group-by :tree-item/type (sort-by :tree-item/path (:tree/tree tree)))]
+          (let [by-type (group-by #(let [type (:tree-item/type %)]
+                                    (condp = type
+                                      "blob" "blob"
+                                      "file" "blob"
+                                      "tree" "tree")) (sort-by :tree-item/path (:tree/tree tree)))]
+            (println tree)
             (dom/table nil
                        (dom/tbody nil
                                   (map #(dom/tr

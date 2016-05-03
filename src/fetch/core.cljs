@@ -21,7 +21,11 @@
      (-> (js/fetch url opts-js)
          (.then (fn [response]
 
-                  (-> (.json response)
+                  (-> (if (->
+                                (.-headers response)
+                                (.get "Content-Type"))
+                        (.json response)
+                        (js/Promise.resolve nil))
                       (.then (fn [json]
                                (let [headers (.-headers response)
                                      json-response {:json (when json (js->clj json :keywordize-keys true))

@@ -1,25 +1,16 @@
 (ns github.core
   (:require [clojure.string :as str]))
 
-(defprotocol IGitHub
-  (get-endpoint [x])
-  (GET-json-request [x path-and-query])
-  (GET-current-user-request [x])
-  (full-url [this path-and-query]))
+(def ^:dynamic *github-api-endpoint* "https://api.github.com")
 
-(defrecord GitHub [endpoint]
-  IGitHub
-  (get-endpoint [_] endpoint)
+(defn full-url
+  [path-and-query]
+  (str *github-api-endpoint* path-and-query))
 
-  (full-url
-    [this path-and-query]
-    (str (get-endpoint this) path-and-query))
-  (GET-json-request [this path-and-query]
-    {:url (full-url this path-and-query)
-     :method "GET"
-     :headers {"Accept" "application/json"}})
-  (GET-current-user-request [this]
-    (GET-json-request this "/user")))
+(defn GET-json-request [path-and-query]
+                  {:url (full-url path-and-query)
+                   :method "GET"
+                   :headers {"Accept" "application/json"}})
 
 (defn parse-link [link]
   (let [[_ url] (re-find #"<(.*)>" link)
