@@ -5,7 +5,7 @@
                  [org.clojure/core.async "0.2.374"]
                  [datascript "0.15.0"]
                  [org.omcljs/om "1.0.0-alpha34"]
-                 [org.routom/routom "0.1.0-alpha6" :exclusions [org.omcljs/om]]
+                 [org.routom/routom "0.1.0-alpha7" :exclusions [org.omcljs/om]]
                  [figwheel-sidecar "0.5.0-SNAPSHOT" :scope "test"]]
 
   :plugins [[lein-figwheel "0.5.2"]

@@ -4,15 +4,54 @@
             [routom.core :as r]
             [routom.bidi :as rb]))
 
+(defui RepoDescription
+  Object
+  (initLocalState [this]
+    (let [{:keys [repo/description repo/homepage]} (:repo (om/props this))]
+      {:editing     false
+       :description description
+       :homepage    homepage}))
+  (render [this]
+    (let [{:keys [homepage description editing] :as state} (om/get-state this)]
+
+      (if editing
+        (dom/div nil
+                 (dom/input #js {:type     "text"
+                                 :value    (or description "")
+                                 :onChange #(om/update-state! this assoc :description (.. % -target -value))})
+                 (dom/input #js {:type     "text"
+                                 :value    (or homepage "")
+                                 :onChange #(om/update-state! this assoc :homepage (.. % -target -value))})
+                 (dom/button #js {:onClick (fn [_]
+                                              (om/update-state! this update :editing not)
+                                              ((om/get-computed this :update) description homepage))} "Save")
+                 (dom/a #js {:onClick (fn [_]
+                                        (let [{:keys [repo/description repo/homepage]} (:repo (om/props this))]
+                                          (om/update-state! this #(-> %
+                                                                      (update :editing not)
+                                                                      (assoc :description description)
+                                                                      (assoc :homepage homepage)))))} "Cancel"))
+        (dom/div nil
+                 (dom/p nil description
+                        (dom/a #js {:href homepage} homepage)
+                        (dom/a #js {:onClick #(om/update-state! this update :editing not)} " -- EDIT")))))))
+
+(def repo-description (om/factory RepoDescription))
+
 (defui Repo
+  static om/Ident
+  (ident [this {:keys [db/id]}]
+    [:db/id id])
   static om/IQuery
   (query [this] '[*])
   static r/IRootQuery
   (root-query [this]
     '[({:repo/by-name
-        [:repo/default-branch
+        [:db/id
+         :repo/default-branch
          :repo/name
          :repo/description
+         :repo/homepage
          {:repo/branches [:branch/name
                           :branch/id]}]}
         {:user/login ?user/login :repo/name ?repo/name})
@@ -32,7 +71,7 @@
           history (om/shared this :history)
           {:keys [user/login branch] :as route-params} (om/get-computed this :route/params)
           route-id (om/get-computed this :route/id)]
-      (println repo)
+
       (if (and branches (not tree) default-branch)
         (let [path (rb/path-for router :route.repo/branch (assoc route-params :branch default-branch))]
           (.replace history path)))
@@ -42,11 +81,16 @@
                        (dom/a #js {:href (rb/href-for router :route.repos/list {:user/login login})}
                               login)
                        (str " / " name))
-               (dom/p nil description)
+               (if repo
+                 (repo-description
+                   (om/computed
+                     {:repo repo}
+                     {:update #(om/transact! this '[(repo/update {:repo/id (:repo/id repo) :repo/description %1 :repo/homepage %2})])})))
                (when branches
+
                  (dom/div nil
                           (dom/select
-                            #js {:value    branch
+                            #js {:value    (or branch "")
                                  :onChange #(let [path (rb/path-for router route-id (assoc route-params :branch (.. % -target -value)))]
                                              ; using setTimeout because a synchronous (.push history)
                                              ; doesn't appear to trigger a re-render

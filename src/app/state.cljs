@@ -9,5 +9,5 @@
               auth/schema
               repos/schema))
 
-(def conn (d/create-conn schema))
+(defonce conn (d/create-conn schema))
 
