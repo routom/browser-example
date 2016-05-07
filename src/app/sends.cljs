@@ -1,7 +1,7 @@
 (ns app.sends
   (:require-macros [cljs.core.async.macros :refer [go]])
   (:require [cljs.core.async :as async]
-            [fetch.core :as f]
+            [net.core :as f]
             [github.core :as ghc]))
 
 (defmulti send (fn [key ast callback] key))

@@ -31,3 +31,7 @@
   (pprint (apply d/q
             q
             @app-state args)))
+
+(defn on-js-reload
+  []
+  (app.core/init))

@@ -6,6 +6,7 @@
             [app.state :as s]
             [app.sends :as sends]
             [app.core.core]
+            [app.core.mutations]
             [om.dom :as dom]
             [datascript.core :as d]
             [om.next :as om :refer-macros [defui]]
@@ -35,10 +36,10 @@
   (atom
     {:home {:ui Home :bidi/path "/"}
      :login {:module-id "auth" :bidi/path ["/login" rest-expr]}
-     :repos {:module-id "repos" :bidi/path ["/users" rest-expr]}
+
      :shell {:ui Shell
              :sub-routes
-                 {:users/home {:module-id "users" :bidi/path ["users/" rest-expr]}}}}))
+                 {:repos {:module-id "repos" :bidi/path ["/users" rest-expr]}}}}))
 
 (defn send
   [{:keys [remote] :as remotes} callback]

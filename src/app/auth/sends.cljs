@@ -1,17 +1,18 @@
 (ns app.auth.sends
   (:require-macros [cljs.core.async.macros :refer [go]])
   (:require [app.sends :refer [send create-sender]]
-            [github.users :as ghu]))
+            [github.users :as ghu]
+            [datascript.core :as d]))
 
 (defn json->user
   [{:keys [login url name location]}]
-  [{:user/login    login
-    :user/url      url
-    :user/location location
-    :user/name     name}
-   {:user/current true
-    :remote/status :success
-    :user/user [:user/login login]}])
+  [{:user/current true
+
+    :user/user    {:db/id         (d/tempid nil)
+                   :user/login    login
+                   :user/url      url
+                   :user/location location
+                   :user/name     name}}])
 
 (defmethod send :user/current
   [key ast callback]

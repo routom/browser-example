@@ -9,16 +9,14 @@
 (defui Login
   static r/IRootQuery
   (root-query [_] [{:user/current
-                    [:remote/status :remote/error
-                     {:user/user [:user/login :user/url]}]}])
+                    [{:user/user [:user/login :user/url]}]}])
   static om/IQuery
   (query [this]
     [:login/token])
   Object
   (render [this]
     (let [{token :login/token :as props} (om/props this)
-          {:keys [user/user remote/status]}
-            (om/get-computed this [:user/current])]
+          [{:keys [remote/status]} {:keys [user/user]}] (om/get-computed this [:user/current])]
       (println "login props: " props)
       (dom/div
         nil
@@ -32,17 +30,22 @@
   (render-success
     [this token {:keys [user/login user/url] :as user}]
     (if user
-      (let [_ (.set cookies "GITHUB_TOKEN" token)]
+      (let [_ (.set cookies "GITHUB_TOKEN" token)
+            redirect (om/get-computed this [:route/params :redirect])
+            history (om/shared this :history)]
+        (if redirect
+          (.push history redirect)
+          (.push history (str "/users/" login "/repos")))
         (dom/a
           #js {:href (str "#/users/" login "/repos")}
-          (str "hello " login)))))
+          (str "Welcome " login)))))
   (render-initial
     [this token status]
     (dom/div
       nil
       (dom/div
         nil
-        (dom/label #js {} "GitHub Personal Access Token"))
+        (dom/label #js {} "Enter a GitHub Personal Access Token"))
       (dom/div
         nil
         (dom/input
@@ -50,11 +53,13 @@
                :onChange #(om/transact!
                            this
                            `[(login/update-token ~{:login/token (.. % -target -value)})])
-               :value    token})
+               :value    (or token "")})
         (dom/button
           #js {:disabled (= :loading status)
                :onClick
                #(om/transact!
                  this
                  `[(login/update-token ~{:login/token token}) ~(om/force :user/current)])
-                         } "Submit")))))
+                         } "Submit"))
+      (dom/p nil "If you don't have one, you can generate a personal access token in your "
+             (dom/a #js {:href "https://github.com/settings/tokens"} "GitHub personal settings")))))

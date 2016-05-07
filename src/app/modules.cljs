@@ -4,14 +4,12 @@
   (:import goog.module.ModuleManager))
 
 (def modules
-  #js {"auth" "/js/auth.js"
-       "repos" "/js/repos.js"
-       "users" "/js/users.js"})
+  #js {"auth" "/js/min/auth.js"
+       "repos" "/js/min/repos.js"})
 
 (def module-info
   #js {"auth" []
-       "users" ["auth"]
-       "repos" ["users"]})
+       "repos" []})
 
 (def manager (module-manager/getInstance))
 
