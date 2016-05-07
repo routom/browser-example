@@ -1,5 +1,6 @@
 (ns app.repos.ui.list
   (:require
+    cljsjs.moment
     [routom.core :as r]
     [routom.bidi :as rb]
     [om.next :as om :refer-macros [defui]]

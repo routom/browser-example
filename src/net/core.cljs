@@ -1,4 +1,4 @@
-(ns fetch.core
+(ns net.core
   (:require-macros [cljs.core.async.macros :refer [go]])
   (:require [goog.Uri.QueryData :as q]
             [cljs.core.async :as async :refer [chan timeout close! >! <! ]])
@@ -12,7 +12,7 @@
          error-chan (chan)
          timeout-chan (timeout (or timeout-ms *timeout*))
          opts (dissoc opts :url)
-         opts-js (if (= method "POST")
+         opts-js (if (or (= method "POST") (= method "PATCH"))
                    (clj->js (update opts :body #(js/JSON.stringify (clj->js %))))
                    (clj->js opts))
          close-chans (fn []
@@ -34,13 +34,12 @@
                                                     :ok (.-ok response)
                                                     :response response}]
                                  (async/put! success-chan json-response)))))))
-         (.catch (fn [result]
-                   (if (instance? js/Error result)
-                     (async/put! error-chan result)
-                     (async/put! error-chan (js->clj result :keywordize-keys true)))))
          (.then (fn [result]
                   (close-chans))
                 (fn [error]
+                  (if (instance? js/Error error)
+                    (async/put! error-chan error)
+                    (async/put! error-chan (js->clj error :keywordize-keys true)))
                   (close-chans))))
      [success-chan error-chan timeout-chan])
     ))

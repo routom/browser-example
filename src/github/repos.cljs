@@ -17,6 +17,9 @@
 (defn get-collaborators [user repo-name]
   (gh/GET-json-request (str "/repos/" user "/" repo-name "/collaborators")))
 
+(defn edit-repo [owner repo-name body]
+  (gh/PATCH-json-request (str "/repos/" owner "/" repo-name) body))
+
 
 
 

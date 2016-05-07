@@ -12,6 +12,13 @@
                    :method "GET"
                    :headers {"Accept" "application/json"}})
 
+(defn PATCH-json-request [path-and-query body]
+  {:url (full-url path-and-query)
+   :method "PATCH"
+   :headers {"Content-Type" "application/json"
+             "Accept" "application/json"}
+   :body body})
+
 (defn parse-link [link]
   (let [[_ url] (re-find #"<(.*)>" link)
         [_ rel] (re-find #"rel=\"(.*)\"" link)]

@@ -38,7 +38,7 @@
           (.push history (str "/users/" login "/repos")))
         (dom/a
           #js {:href (str "#/users/" login "/repos")}
-          (str "hello " login)))))
+          (str "Welcome " login)))))
   (render-initial
     [this token status]
     (dom/div

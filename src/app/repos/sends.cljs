@@ -1,7 +1,6 @@
 (ns app.repos.sends
   (:require-macros [cljs.core.async.macros :refer [go]])
   (:require [app.sends :refer [send create-sender assign-namespace]]
-            [fetch.core :as f]
             [github.core :as gh]
             [cljs.core.async :as async]
             [github.users :as ghu]
@@ -107,3 +106,16 @@
             (fn [{:keys [json ok]}]
               (when ok
                 (json->blob branch-id (dissoc json :_links)))))))
+
+(defmethod send 'repo/update
+  [key {params :params} callback]
+  (let [{:keys [login/token repo]} params
+        {:keys [repo/owner repo/name repo/homepage repo/description]} repo
+        owner (:user/login owner)
+        ident [:repo/update [owner name]]
+        request (ghr/edit-repo owner name {:name name :homepage homepage :description description})
+        sender (create-sender key ident token callback)]
+    (sender request
+            (fn [{:keys [json ok]}]
+              (when ok
+                (println "repo/update" json))))))

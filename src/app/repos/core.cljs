@@ -1,6 +1,7 @@
 (ns app.repos.core
   (:require [routom.core :as r]
             [app.repos.reads]
+            [app.repos.mutations]
             [app.repos.sends]
             [app.repos.ui.list :refer [RepoList]]
             [app.repos.ui.detail :refer [Repo Branch]]

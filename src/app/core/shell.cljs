@@ -10,6 +10,7 @@
   (query [_] [:shell/title])
   Object
   (render [this]
+    (println "shell props" (om/props this))
     (let [{:keys [shell/title]} (om/props this)
           token (om/get-computed this [:login :login/token])]
       (when-not token
