@@ -7,6 +7,7 @@
                            [org.clojure/clojurescript "1.7.170"]
                            [org.clojure/core.async "0.2.374"]
                            [datascript "0.15.0"]
+                           [cljsjs/moment "2.10.6-4"]
                            [org.routom/routom "0.1.0-alpha8-SNAPSHOT" :exclusions [org.omcljs/om]]
                            [org.omcljs/om "1.0.0-alpha34" :exclusions [cljsjs/react cljsjs/react-dom]]
 [natal-shell "0.1.6"]]
