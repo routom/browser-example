@@ -1,6 +1,6 @@
 (ns app.repos.ui.detail
   (:require [om.next :as om :refer-macros [defui]]
-            [om.dom :as dom]
+            [app.components :as dom]
             [routom.core :as r]
             [routom.bidi :as rb]))
 
@@ -85,10 +85,13 @@
           (.replace history path)))
 
       (dom/div nil
-               (dom/h1 nil
-                       (dom/a #js {:href (rb/href-for router :route.repos/list {:user/login login})}
-                              login)
-                       (str " / " name))
+               (dom/a #js {:onPress (fn []
+                                      (let [set-route! (om/shared this :set-route!)]
+                                        (set-route! {:route/id :route.repos/list
+                                                     :route/params {:user/login login}})))}
+                      (dom/text nil login))
+               (dom/text (str " / " name))
+
                (if repo
                  (repo-description
                    (om/computed
@@ -150,18 +153,19 @@
                                       "file" "blob"
                                       "tree" "tree")) (sort-by :tree-item/path (:tree/tree tree)))]
             (println tree)
-            (dom/table nil
-                       (dom/tbody nil
-                                  (map #(dom/tr
-                                         #js {:key (:tree-item/path %)}
-                                         (dom/td nil (:tree-item/path %))
-                                         (dom/td nil "tree")) (get by-type "tree"))
-
-                                  (map #(dom/tr
-                                         #js {:key (:tree-item/path %)}
-                                         (dom/td
-                                           nil
-                                           (dom/a
-                                             #js {:href (rb/href-for router :route.repo/tree-item (assoc route-params :path (:tree-item/path %)))}
-                                             (:tree-item/path %)))
-                                         (dom/td nil "file")) (get by-type "blob"))))))))))
+            (dom/div nil
+                     (map #(dom/div
+                            #js {:key (:tree-item/path %)}
+                            (dom/div nil (:tree-item/path %))
+                            (dom/div nil "tree")) (get by-type "tree"))
+                     (map #(dom/div
+                            #js {:key (:tree-item/path %)}
+                            (dom/div
+                              nil
+                              (dom/a
+                                #js {:onPress (fn []
+                                                (let [set-route! (om/shared this :set-route!)]
+                                                  (set-route! {:route/id     :route.repo/tree-item
+                                                               :route/params (assoc route-params :path (:tree-item/path %))})))}
+                                (dom/text nil (:tree-item/path %))))
+                            (dom/div nil "file")) (get by-type "blob")))))))))

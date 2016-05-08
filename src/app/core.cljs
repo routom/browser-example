@@ -1,16 +1,18 @@
 (ns app.core
-  (:require [goog.dom :as gdom]
-            [app.core.shell :refer [Shell]]
+  (:require [app.core.shell :refer [Shell]]
             [routom.core :as r]
             [routom.bidi :as rb]
             [app.state :as s]
             [app.sends :as sends]
             [app.core.core]
             [app.core.mutations]
-            [om.dom :as dom]
             [datascript.core :as d]
             [om.next :as om :refer-macros [defui]]
-            [app.parser :as p]))
+            [app.components :as c]
+            [app.auth.core]
+            [app.repos.core]
+            [app.parser :as p]
+            [re-natal.support :as sup]))
 
 
 (enable-console-print!)
@@ -24,22 +26,24 @@
   (query [this] [:home/content])
   Object
   (render [this]
-    (dom/div nil
-             (dom/div nil "Home page")
-             (dom/a #js {:href (-> (om/shared this :history)
-                                   (.createHref "/login/"))}
-                    "Login"))))
+    (c/view nil
+             (c/text nil "Home page")
+
+             (c/touchable-highlight
+               #js {:onPress #(let [set-route! (om/shared this :set-route!)]
+                               (set-route! {:route/id :login :route/params {}})) }
+               (c/text nil "Login")))))
 
 (def rest-expr [#".+" :rest])
 
 (def routes
   (atom
-    {:home {:ui Home :bidi/path "/"}
-     :login {:module-id "auth" :bidi/path ["/login" rest-expr]}
+    {:home {:ui Home}
+     :login (r/init-module "auth")
 
      :shell {:ui Shell
              :sub-routes
-                 {:repos {:module-id "repos" :bidi/path ["/users" rest-expr]}}}}))
+                 {:repos (r/init-module "repos")}}}))
 
 (defn send
   [{:keys [remote] :as remotes} callback]
@@ -66,32 +70,22 @@
 
 (defn init
   []
-  (let [{:keys [root-class set-route! get-route ui->props]} (r/init-router routes #(dom/div nil (str "loading module " %2 " status: " %1)))
-        useQueries js/window.History.useQueries
-        createHistory (useQueries js/window.History.createHashHistory)
-        history (createHistory)
-        bidi-router (rb/start-bidi-router!
-                      history
-                      set-route!
-                      routes
-                      {:route/id :home :route/params {:rest "/"}})
+  (let [{:keys [root-class set-route! get-route ui->props]} (r/init-router routes #(c/text nil (str "loading module " %2 " status: " %1)))
         reconciler (om/reconciler
-                     {:parser p/parser
-                      :ui->props ui->props
-                      :state  s/conn
-                      :normalize false
-                      :send send
-                      :merge merge-datascript
-                      :migrate nil
-                      :shared {:bidi-router bidi-router
-                               :history history}})]
+                     {:parser      p/parser
+                      :ui->props   ui->props
+                      :state       s/conn
+                      :normalize   false
+                      :send        send
+                      :merge       merge-datascript
+                      :migrate     nil
+                      :shared      {:set-route! set-route!}
+                      :root-render sup/root-render
+                      :root-unmount sup/root-unmount})]
+    (set-route! {:route/id :home :route/params {}})
 
-    (let [root (om/add-root! reconciler root-class (gdom/getElement "app"))]
-      {:reconciler reconciler
-       :root root
-       :history history
-       :get-route get-route
-       :set-route! set-route!
-       :root-class root-class
-       :routes routes
-       :bidi-router bidi-router})))
+    {:reconciler reconciler
+     :get-route get-route
+     :set-route! set-route!
+     :root-class root-class
+     :routes routes}))

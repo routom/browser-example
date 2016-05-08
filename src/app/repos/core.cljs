@@ -6,13 +6,11 @@
             [app.repos.ui.list :refer [RepoList]]
             [app.repos.ui.detail :refer [Repo Branch]]
             [app.repos.ui.tree-item :refer [Blob]]
-            )
-  (:import goog.module.ModuleManager))
+            ))
 
 (defmethod r/init-module "repos"
   [_]
-  {:bidi/path ["/users/" :user/login]
-   :sub-routes
+  {:sub-routes
               {:route.repos/list
                {:ui        RepoList
                 :bidi/path "/repos"}
@@ -30,9 +28,3 @@
                                :bidi/path ["/" :path]}}}}}}
    })
 
-(defn init
-  []
-  (-> goog.module.ModuleManager .getInstance (.setLoaded "repos")))
-
-(when-not js/goog.DEBUG
-  (init))

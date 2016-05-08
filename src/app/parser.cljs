@@ -1,7 +1,6 @@
 (ns app.parser
   (:require [om.next :as om]
-            [datascript.core :as d])
-  (:import [goog.net cookies]))
+            [datascript.core :as d]))
 
 (defn pull-by-attr-value
   ([db key value]
@@ -28,9 +27,7 @@
   (let [entities (pull-by-attr-value @state key true query)
         value (first entities)]
     (if value
-      {:value value}
-      (if-let [cookie (.get cookies "GITHUB_TOKEN")]
-        {:value {:login/token cookie}}))))
+      {:value value})))
 
 (defmulti mutate om/dispatch)
 

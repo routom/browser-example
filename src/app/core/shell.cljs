@@ -1,6 +1,6 @@
 (ns app.core.shell
   (:require [om.next :as om :refer-macros [defui]]
-            [om.dom :as dom]
+            [app.components :as dom]
             [routom.core :as r]))
 
 (defui Shell
@@ -17,5 +17,5 @@
         (om/transact! this '[(go/login)]))
       (dom/div
         nil
-        (dom/div #js {:key "title"} title)
+        (dom/text #js {:key "title"} title)
         (r/render-subroute this)))))

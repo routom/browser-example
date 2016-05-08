@@ -2,9 +2,8 @@
   (:require
     cljsjs.moment
     [routom.core :as r]
-    [routom.bidi :as rb]
     [om.next :as om :refer-macros [defui]]
-    [om.dom :as dom]))
+    [app.components :as dom]))
 
 
 (defui RepoList
@@ -32,11 +31,11 @@
           {[remote repos] :repos/by-login params :route/params :as computed} (om/get-computed this)]
       (dom/div
         nil
-        (dom/div nil "Repos")
+        (dom/div nil (dom/text nil "Repos"))
         (condp = (:remote/status remote)
-          :loading (dom/div nil "loading...")
-          :error (dom/div nil "An unexpected error occurred")
-          :timeout (dom/div nil "The operation timed out. Check your network connection")
+          :loading (dom/div nil (dom/text nil "loading..."))
+          :error (dom/div nil (dom/text nil "An unexpected error occurred"))
+          :timeout (dom/div nil (dom/text nil "The operation timed out. Check your network connection"))
           :success (.render-success this remote repos params)
           ))))
 
@@ -45,7 +44,7 @@
       nil
       (dom/button
         #js {:onClick #(om/transact! this `[(remote/force) ~(om/force :repos/by-login)])}
-        "Refresh")
+        (dom/text nil "Refresh"))
       (dom/ul
         nil
         (map
@@ -54,23 +53,25 @@
       (let [last (get-in remote [:repos.list/links :last])
             uri (goog.Uri. last)
             bidi-router (om/shared this :bidi-router)]
-        (dom/div
-          nil
-          (str "Page " (:repos/page params) " of " (.getParameterValue uri "page")
-               (rb/path-for bidi-router :repos params (select-keys params [:per-page])))))))
+        (dom/div nil (dom/text
+                       nil
+                       (str "Page " (:repos/page params) " of " (.getParameterValue uri "page")
+                            ))))))
   (render-repo-list-item [this repo]
     (dom/li
       #js {:key (:repo/id repo)}
-      (dom/h2 nil
-              (dom/a
-                #js {:href (rb/href-for
-                             (om/shared this :bidi-router)
-                             :route.repo/detail
-                             {:user/login (get-in repo [:repo/owner :user/login])
-                              :repo/name  (:repo/name repo)})} (:repo/name repo)))
+      (dom/a
+        #js {:onPres (let [set-route!
+                           (om/shared this :set-route!)]
+                       (set-route! {:route/id :route.repo/detail
+                                    :route/params
+                                              {:user/login (get-in repo [:repo/owner :user/login])
+                                               :repo/name  (:repo/name repo)}}))}
+        (dom/text nil (:repo/name repo)))
+
       (dom/p nil (:repo/description repo))
-      (dom/p #js {:style #js {:fontStyle "italic"}}
-             (dom/span nil (str "Last modified " (-> (:repo/pushed_at repo)
-                                                     (js/moment)
-                                                     (.fromNow))))))))
+
+      (dom/span nil (str "Last modified " (-> (:repo/pushed_at repo)
+                                              (js/moment)
+                                              (.fromNow)))))))
 

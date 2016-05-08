@@ -1,6 +1,6 @@
 (ns app.repos.ui.tree-item
   (:require [om.next :as om :refer-macros [defui]]
-            [om.dom :as dom]
+            [app.components :as dom]
             [routom.core :as r]))
 
 (defui Blob
