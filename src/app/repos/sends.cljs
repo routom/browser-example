@@ -93,7 +93,7 @@
                   :tree/id branch-id
                   :tree/tree [(-> (assign-namespace json "tree-item")
                                   (assoc :db/id (d/tempid nil))
-                                  (update :tree-item/content js/Base64.fromBase64))]}}])
+                                  (update :tree-item/content js/base64.decode))]}}])
 
 (defmethod send :tree-item/by-path
   [key {params :params} callback]

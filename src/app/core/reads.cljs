@@ -3,4 +3,4 @@
 
 (defmethod p/read :shell
   [env key params]
-  {:value {:shell/title "GitHub Explorer"}})
+  {:value (p/pull-one-by-attr-value @(:state env) key true (:query env))})

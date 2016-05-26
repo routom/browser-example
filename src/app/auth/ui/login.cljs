@@ -8,7 +8,9 @@
 
 (defui Login
   static r/IRootQuery
-  (root-query [_] [{:user/current
+  (root-query [_] '[{:shell
+                    [{:shell/nav-state [*]}]}
+                   {:user/current
                     [{:user/user [:user/login :user/url]}]}])
   static om/IQuery
   (query [this]
@@ -31,10 +33,16 @@
     [this token {:keys [user/login user/url] :as user}]
     (if user
       (let [set-route! (om/shared this :set-route!)
-            redirect (om/get-computed this [:route/params :redirect])]
+            redirect (om/get-computed this [:route/params :redirect])
+            nav-state (om/get-computed this [:shell :shell/nav-state])
+            on-navigate #(om/transact! this `[(nav/navigate {:nav-state ~nav-state :action ~(js->clj % :keywordize-keys true)})])]
         (if redirect
           (set-route! redirect)
-          (set-route! {:route/id :route.repos/list :route/params {:user/login login}}))
+          (on-navigate {:type "push"
+                        :key :route.repos/list
+                        :params {:user/login login}})
+          ;(set-route! {:route/id :route.repos/list :route/params {:user/login login}})
+          )
         (dom/a
           #js {:onPress #(set-route! {:route/id :repos :route/params {:user/login login}})}
           (dom/text nil (str "Welcome " login))))))
@@ -54,7 +62,7 @@
                            `[(login/update-token ~{:login/token %})])
                :value    (or token "")})
         (dom/button
-          #js {:disabled (= :loading status)
+          {:disabled (= :loading status)
                :onPress
                #(om/transact!
                  this

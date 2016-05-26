@@ -3,7 +3,7 @@
                    [natal-shell.alert :refer [alert]])
   (:require [om.next :as om :refer-macros [defui]]
             [re-natal.support :as sup]
-            [cljsrn-example.state :as state]))
+            ))
 
 (set! js/window.React (js/require "react-native"))
 

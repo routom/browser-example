@@ -33,26 +33,24 @@
         nil
         (dom/div nil (dom/text nil "Repos"))
         (condp = (:remote/status remote)
-          :loading (dom/div nil (dom/text nil "loading..."))
           :error (dom/div nil (dom/text nil "An unexpected error occurred"))
           :timeout (dom/div nil (dom/text nil "The operation timed out. Check your network connection"))
           :success (.render-success this remote repos params)
+          (dom/div nil (dom/text nil "loading..."))
           ))))
 
   (render-success [this remote repos params]
     (dom/div
       nil
       (dom/button
-        #js {:onClick #(om/transact! this `[(remote/force) ~(om/force :repos/by-login)])}
+        {:onPress #(om/transact! this `[(remote/force) ~(om/force :repos/by-login)])}
         (dom/text nil "Refresh"))
-      (dom/ul
-        nil
-        (map
-          #(.render-repo-list-item this %) (sort-by :repo/pushed_at #(compare %2 %1) repos)))
+      (dom/render-list-view
+        (vec (sort-by :repo/pushed_at #(compare %2 %1) repos))
+        #(.render-repo-list-item this %))
 
       (let [last (get-in remote [:repos.list/links :last])
-            uri (goog.Uri. last)
-            bidi-router (om/shared this :bidi-router)]
+            uri (goog.Uri. last)]
         (dom/div nil (dom/text
                        nil
                        (str "Page " (:repos/page params) " of " (.getParameterValue uri "page")
@@ -61,10 +59,12 @@
     (dom/li
       #js {:key (:repo/id repo)}
       (dom/a
-        #js {:onPres (let [set-route!
-                           (om/shared this :set-route!)]
-                       (set-route! {:route/id :route.repo/detail
-                                    :route/params
+        #js {:onPress #(let [on-navigate
+                           (om/get-computed this :on-navigate)]
+
+                       (on-navigate {:type "push"
+                                     :key :route.repo/detail
+                                    :params
                                               {:user/login (get-in repo [:repo/owner :user/login])
                                                :repo/name  (:repo/name repo)}}))}
         (dom/text nil (:repo/name repo)))

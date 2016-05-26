@@ -29,8 +29,8 @@
     (c/view nil
              (c/text nil "Home page")
 
-             (c/touchable-highlight
-               #js {:onPress #(let [set-route! (om/shared this :set-route!)]
+             (c/button
+               {:onPress #(let [set-route! (om/shared this :set-route!)]
                                (set-route! {:route/id :login :route/params {}})) }
                (c/text nil "Login")))))
 
@@ -70,22 +70,26 @@
 
 (defn init
   []
-  (let [{:keys [root-class set-route! get-route ui->props]} (r/init-router routes #(c/text nil (str "loading module " %2 " status: " %1)))
+  (let [
+        {:keys [root-class set-route! get-route ui->props]} (r/init-router routes #(c/text nil (str "loading module " %2 " status: " %1)))
         reconciler (om/reconciler
-                     {:parser      p/parser
-                      :ui->props   ui->props
-                      :state       s/conn
-                      :normalize   false
-                      :send        send
-                      :merge       merge-datascript
-                      :migrate     nil
-                      :shared      {:set-route! set-route!}
-                      :root-render sup/root-render
-                      :root-unmount sup/root-unmount})]
-    (set-route! {:route/id :home :route/params {}})
+                     {:parser       p/parser
+                      :ui->props    ui->props
+                      :state        s/conn
+                      :normalize    false
+                      :send         send
+                      :merge        merge-datascript
+                      :migrate      nil
+                      :shared       {:set-route! set-route!
+                                     :get-route  get-route}
+                      :root-render  sup/root-render
+                      :root-unmount sup/root-unmount})
+        initial-route {:route/id :home :route/params {}}]
 
-    {:reconciler reconciler
-     :get-route get-route
-     :set-route! set-route!
-     :root-class root-class
-     :routes routes}))
+    (set-route! initial-route)
+    {:reconciler     reconciler
+     :get-route      get-route
+     :initial-route  initial-route
+     :set-route!     set-route!
+     :root-class     root-class
+     :routes         routes}))

@@ -39,4 +39,4 @@
 
 (defn on-js-reload
   []
-  (app.core/init))
+  (set! app (app.core/init)))

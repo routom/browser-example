@@ -1,8 +1,7 @@
 (ns app.repos.ui.detail
   (:require [om.next :as om :refer-macros [defui]]
             [app.components :as dom]
-            [routom.core :as r]
-            [routom.bidi :as rb]))
+            [routom.core :as r]))
 
 (defui EditableRepoDescription
   Object
@@ -16,32 +15,36 @@
 
       (if editing
         (dom/div #js {:style #js {:marginBottom 10}}
-                 (dom/div #js {:style #js {:display "inline-block"}}
+                 (dom/div nil
                           (dom/label #js {:style #js {:display "block"}} "Description")
                           (dom/input #js {:style #js {:width 400}
-                                          :type     "text"
                                           :value    (or description "")
-                                          :onChange #(om/update-state! this assoc :description (.. % -target -value))}))
-                 (dom/div #js {:style #js {:display "inline-block"}}
+                                          :onChangeText #(om/update-state! this assoc :description %)}))
+                 (dom/div nil
                           (dom/label #js {:style #js {:display "block"}} "Website")
-                          (dom/input #js {:type     "text"
-                                          :value    (or homepage "")
-                                          :onChange #(om/update-state! this assoc :homepage (.. % -target -value))}))
+                          (dom/input #js {:value    (or homepage "")
+                                          :onChange #(om/update-state! this assoc :homepage %)}))
 
-                 (dom/button #js {:onClick (fn [_]
+                 (dom/button {:onPress (fn [_]
                                               (om/update-state! this update :editing not)
-                                              ((om/get-computed this :update) description homepage))} "Save")
-                 (dom/button #js {:onClick (fn [_]
+                                              ((om/get-computed this :update) description homepage))}
+                             (dom/text nil "Save"))
+                 (dom/button {:onPres (fn [_]
                                         (let [{:keys [repo/description repo/homepage]} (:repo (om/props this))]
                                           (om/update-state! this #(-> %
                                                                       (update :editing not)
                                                                       (assoc :description description)
-                                                                      (assoc :homepage homepage)))))} "Cancel"))
+                                                                      (assoc :homepage homepage)))))}
+                             (dom/text nil "Cancel")))
         (dom/div nil
                  (dom/p nil (dom/span nil description)
                         (dom/span nil " ")
-                        (dom/span nil (dom/a #js {:href homepage} homepage))
-                        (dom/a #js {:onClick #(om/update-state! this update :editing not)} " -- EDIT")))))))
+                        (dom/span nil
+                                  (dom/text #js {:onPress #(let [set-route! (om/shared this :set-route!)]
+                                                            (set-route! {:route/id :route.repos/list
+                                                                         :route/params (om/get-computed this :route/params)}))} homepage))
+                        (dom/text #js {:onPress #(om/update-state! this update :editing not)}
+                               (dom/text nil " -- EDIT"))))))))
 
 (def repo-description (om/factory EditableRepoDescription))
 
@@ -81,8 +84,8 @@
           route-id (om/get-computed this :route/id)]
 
       (if (and branches (not tree) default-branch)
-        (let [path (rb/path-for router :route.repo/branch (assoc route-params :branch default-branch))]
-          (.replace history path)))
+        (let [set-route! (om/shared this :set-route!)]
+          (set-route! {:route/id :route.repo/branch :route/params (assoc route-params :branch default-branch)})))
 
       (dom/div nil
                (dom/a #js {:onPress (fn []
@@ -103,16 +106,15 @@
 
                  (dom/div nil
                           (dom/select
-                            #js {:value    (or branch "")
-                                 :onChange #(let [path (rb/path-for router route-id (assoc route-params :branch (.. % -target -value)))]
-                                             ; using setTimeout because a synchronous (.push history)
-                                             ; doesn't appear to trigger a re-render
-                                             ; should probably use om/transact! instead
-                                             (js/setTimeout (fn [] (.push history path)) 100))}
-                            (map #(dom/option
-                                   #js {:value (:branch/name %)
-                                        :key (:branch/name %)}
-                                   (:branch/name %)) branches))
+                            #js {:selectedValue (or branch "")
+                                 :onValueChange #(let [set-route! (om/shared this :set-route!)]
+                                                  (set-route! {:route/id route-id :route/params (assoc route-params :branch %)})
+                                                  )}
+                            (clj->js (mapv #(dom/option
+                                             #js {:label (:branch/name %)
+                                                  :value (:branch/name %)
+                                                  :key   (:branch/name %)}
+                                             (:branch/name %)) branches)))
                           (r/try-render-subroute this)))))))
 
 (defui Branch
@@ -156,8 +158,8 @@
             (dom/div nil
                      (map #(dom/div
                             #js {:key (:tree-item/path %)}
-                            (dom/div nil (:tree-item/path %))
-                            (dom/div nil "tree")) (get by-type "tree"))
+                            (dom/div nil (dom/text nil (:tree-item/path %)))
+                            (dom/div nil (dom/text nil "tree"))) (get by-type "tree"))
                      (map #(dom/div
                             #js {:key (:tree-item/path %)}
                             (dom/div
@@ -168,4 +170,4 @@
                                                   (set-route! {:route/id     :route.repo/tree-item
                                                                :route/params (assoc route-params :path (:tree-item/path %))})))}
                                 (dom/text nil (:tree-item/path %))))
-                            (dom/div nil "file")) (get by-type "blob")))))))))
+                            (dom/div nil (dom/text nil "file"))) (get by-type "blob")))))))))

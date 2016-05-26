@@ -26,9 +26,9 @@
     (dom/div nil (dom/h1 nil (om/get-computed this [:route/params :path]))
              (let [[remote blob] (om/get-computed this :tree-item/by-path)]
                (condp = (:remote/status remote)
-                 :loading (dom/div nil "loading...")
-                 :timeout (dom/div nil "the request timed out")
-                 :error (dom/div nil "an error occurred while processing this request")
+                 :loading (dom/text nil "loading...")
+                 :timeout (dom/text nil "the request timed out")
+                 :error (dom/text nil "an error occurred while processing this request")
                  :success (let [{:keys [http/status http/ok]} remote]
                             (if ok
                               (dom/pre nil (:tree-item/content blob))
