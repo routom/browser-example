@@ -5,9 +5,10 @@
             [re-natal.support :as sup]
             [app.dev :as main]))
 
-(set! js/window.React (js/require "react-native"))
+(set! js/window.React (js/require "react"))
+(set! js/window.ReactNative (js/require "react-native"))
 
-(def app-registry (.-AppRegistry js/React))
+(def app-registry (.-AppRegistry js/ReactNative))
 
 
 

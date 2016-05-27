@@ -21,7 +21,8 @@
     (let [{:keys [shell/title shell/nav-state]} (om/props this)
           token (om/get-computed this [:login :login/token])
           on-navigate #(om/transact! this `[(nav/navigate {:nav-state ~nav-state :action ~(js->clj % :keywordize-keys true)})])
-          subroute (r/render-subroute this {:on-navigate on-navigate})]
+          subroute (r/render-subroute this {:on-navigate on-navigate})
+          current-index (:nav-state/index nav-state)]
       (when-not token
         (om/transact! this '[(go/login)]))
       (c/navigation-animated-view
@@ -31,22 +32,26 @@
              :renderOverlay
                               (fn [props]
                                 (c/navigation-header
-                                  (clj->js
-                                    (merge (js->clj props)
-                                           {:renderTitleComponent
-                                            (fn [props]
-                                              (c/navigation-header-title
-                                                nil "routom"))}))))
+                                  (js/Object.assign #js {}
+                                                    props
+                                                    #js {:renderTitleComponent
+                                                         (fn [props]
+                                                           (c/navigation-header-title
+                                                             nil (.. props -scene -navigationState -key)))})))
              :renderScene
                               (fn [props]
-                                (c/navigation-card
-                                  (clj->js (merge (js->clj props)
-                                                  {:key (str "card_" (.. props -scene -navigationState -key))
-                                                   :renderScene
-                                                        (fn [props]
-                                                          (c/scroll-view
-                                                            #js {:style #js {:marginTop (.-HEIGHT c/NavigationHeader)}}
-                                                            subroute))}))))
+                                (let [index (.. props -scene -index)]
+                                  (when (= index current-index)
+                                    (c/navigation-card
+                                      (js/Object.assign #js {}
+                                                        props
+                                                        #js {:key (str "card_" (.. props -scene -navigationState -key))
+                                                             :renderScene
+                                                                  (fn [props]
+
+                                                                    (c/scroll-view
+                                                                      #js {:style #js {:marginTop (.-HEIGHT c/NavigationHeader)}}
+                                                                      subroute))})))))
 
              })
       )))

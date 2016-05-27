@@ -1,20 +1,23 @@
 (ns app.components)
 
 (set! js/window.base64 (js/require "base-64"))
-(set! js/window.React (js/require "react-native"))
-(def React (js/require "react-native"))
-(def view (.createFactory React (.-View React)))
-(def scroll-view (.createFactory React (.-ScrollView React)))
-(def text-input (.createFactory React (.-TextInput React)))
-(def text (.createFactory React (.-Text React)))
-(def touchable-highlight (.createFactory React (.-TouchableHighlight React)))
-(def picker (.createFactory React (.-Picker React)))
-(def picker-item (.createFactory React (.. React -Picker -Item)))
-(def list-view (js/React.createFactory js/React.ListView))
+(set! js/window.React (js/require "react"))
+(set! js/window.ReactNative (js/require "react-native"))
+(def ReactNative js/ReactNative)
+(def React js/React)
+(def cf (.-createFactory React))
+(def view (cf (.-View ReactNative)))
+(def scroll-view (cf (.-ScrollView ReactNative)))
+(def text-input (cf (.-TextInput ReactNative)))
+(def text (.createFactory React (.-Text ReactNative)))
+(def touchable-highlight (.createFactory React (.-TouchableHighlight ReactNative)))
+(def picker (.createFactory React (.-Picker ReactNative)))
+(def picker-item (.createFactory React (.. ReactNative -Picker -Item)))
+(def list-view (js/React.createFactory js/ReactNative.ListView))
 
 (defn render-list-view
   [coll render-row]
-  (let [data-source (js/React.ListView.DataSource. #js {
+  (let [data-source (js/ReactNative.ListView.DataSource. #js {
                                                         :sectionHeaderHasChanged #(not (= %1 %2))
                                                         :rowHasChanged #(not (= %1 %2))
                                                         :getSectionHeaderData (fn [dataBlob sectionId] dataBlob)
@@ -26,11 +29,11 @@
                     :renderRow render-row}))
   )
 
-(def navigation-animated-view (.createFactory React (.. React -NavigationExperimental -AnimatedView)))
-(def navigation-card (.createFactory React (.. React -NavigationExperimental -Card)))
-(def NavigationHeader (.. React -NavigationExperimental -Header))
+(def navigation-animated-view (.createFactory React (.. ReactNative -NavigationExperimental -AnimatedView)))
+(def navigation-card (.createFactory React (.. ReactNative -NavigationExperimental -Card)))
+(def NavigationHeader (.. ReactNative -NavigationExperimental -Header))
 (def navigation-header (.createFactory React NavigationHeader))
-(def navigation-header-title (.createFactory React (.. React -NavigationExperimental -Header -Title)))
+(def navigation-header-title (.createFactory React (.. ReactNative -NavigationExperimental -Header -Title)))
 
 
 (def div view)

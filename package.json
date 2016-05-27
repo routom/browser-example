@@ -7,7 +7,10 @@
   },
   "dependencies": {
     "base-64": "^0.1.0",
-    "react": "^0.14.8",
-    "react-native": "0.24.1"
+    "react": "^15.0.2",
+    "react-native": "^0.26.2"
+  },
+  "devDependencies": {
+    "rnpm-plugin-upgrade": "^0.26.0"
   }
 }
